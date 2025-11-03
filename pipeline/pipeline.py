@@ -15,8 +15,8 @@ do_transcription = args.transcribe
 do_parsing = args.parse
 do_video = args.video
 
-data_paths = [r"/mnt/f/eze/RJH006/RJH006_subject_object_1/RJH006_eze_miniscr1/RJH006_eze_miniscr1/sub_obj/20250803-160512-002.ns5"]
-names = [r"HEC006_subject_object_1"]
+data_paths = [r"C:\Users\ingri\OneDrive\Documentos\IMIM\RJH006 - Copia\RJH006_subj_obj_1\RJH006_eze_miniscr1\sub_obj\20250803-160512-002.ns5"]
+names = [r"RJH006_subj_obj"]
 
 if do_parsing:
     for data_path, name in zip(data_paths, names):
