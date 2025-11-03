@@ -1,11 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import brpylib
+import sys
+sys.path.append("..")
+import src.brpylib as brpylib
 import glob
 import scipy.io.wavfile as wavfile
 import os
 
-def extract(data_path, destination_path, audio_channel, channel_ids, drive=True):
+def extract(data_path, destination_path, audio_channel, channel_ids):
 
     """
     Extracts the audio data from the .ns5 file and saves it in a .wav file
@@ -75,7 +77,7 @@ def extract_from_path(data_path, audio_channel, channel_ids):
         Audio data
     """
 
-    ns5_path = glob.glob(data_path + '\*.ns6')[0]
+    ns5_path = glob.glob(data_path + '\*.ns5')[0]
 
     nsx_file = brpylib.NsxFile(str(ns5_path))
     cont_data = nsx_file.getdata(channel_ids, 0, full_timestamps=True)
