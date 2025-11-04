@@ -32,7 +32,7 @@ def transcribe(audio_path, experiment_name):
         model_id="scribe_v1",
         tag_audio_events=True,
         diarize=True,
-        additional_formats='[{"format": "segmented_json"},{"format": "srt"}]',
+        additional_formats=[{"format": "segmented_json"},{"format": "srt"}],
         num_speakers=2,
     )
 
