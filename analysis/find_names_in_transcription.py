@@ -43,15 +43,16 @@ for seg in data.get("segments", []):
                     end_time = words[end_idx]["end"]
 
                     results.append({
-                        "name": n,
-                        "text_eng": eng,
+                        "chin_name": n,
+                        "eng_name": eng,
                         "start": start_time,
-                        "end": end_time
+                        "end": end_time,
+                        "sentence": full_text
                     })
                     break 
 
 #Saving results
-output_path = f"{folder_base}/{experiment_name}_names_timestamps.json"
+output_path = f"{folder_base}/{experiment_name}_names_timestampsNEW.json"
 with open(output_path, 'w', encoding='utf-8') as f_out:
     json.dump(results, f_out, ensure_ascii=False, indent=2)
 
