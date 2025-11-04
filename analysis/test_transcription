@@ -1,0 +1,75 @@
+#import glob
+#import elevenlabs
+#import pandas as pd
+#import pickle
+#from elevenlabs.client import ElevenLabs
+import os
+#import argparse
+import json
+import re
+
+def transcribe_words(folder_base, experiment_name):
+
+    json_path = f'{folder_base}/{experiment_name}_transcription.json'
+
+    # Lê o JSON salvo na pasta
+    with open(json_path, 'r', encoding='utf-8') as f_json:
+        json_data = json.load(f_json)
+
+    sentences = []
+
+    for seg in json_data["segments"]:
+        words = seg.get("words", [])
+        if not words:
+            continue
+
+        current_sentence = []
+        start_time = None
+
+        for w in words:
+            char = w["text"]
+            s = w["start"]
+            e = w["end"]
+
+            # Se for pontuação, finaliza a sentença
+            if re.match(r"[，。！？、,.!? \s]+", char):
+                if current_sentence:
+                    sentence_text = "".join([cw["text"] for cw in current_sentence])
+                    sentence_start = current_sentence[0]["start"]
+                    sentence_end = current_sentence[-1]["end"]
+                    sentences.append({
+                        "text": sentence_text,
+                        "start": sentence_start,
+                        "end": sentence_end
+                    })
+                    current_sentence = []
+                # ignora a pontuação em si (não entra na sentença)
+            else:
+                # acumula o caractere como parte da sentença
+                current_sentence.append(w)
+
+        # Se sobrar algo sem pontuação no final, também salva
+        if current_sentence:
+            sentence_text = "".join([cw["text"] for cw in current_sentence])
+            sentence_start = current_sentence[0]["start"]
+            sentence_end = current_sentence[-1]["end"]
+            sentences.append({
+                "text": sentence_text,
+                "start": sentence_start,
+                "end": sentence_end
+            })
+
+    # Salva resultado
+
+    with open(f'{folder_base}/{experiment_name}_transcription_words.json', 'w', encoding='utf-8') as f_out:
+        json.dump({"sentences": sentences}, f_out, ensure_ascii=False, indent=2)
+
+    print(f"✅ Sentences file saved at: f'{folder_base}/{experiment_name}_transcription_words.json")
+
+#print(f"[-] Finished transcribing {experiment_name}.")
+
+
+folder_base = r"C:\Users\ingri\Documents\IMIM\experiments\RJH006_subj_obj\teste"
+audio_path = r"C:\Users\ingri\Documents\IMIM\experiments\RJH006_subj_obj\teste\RJH006_subj_obj_audio.wav"
+experiment_name = "RJH006_subj_obj"
+transcribe_words(folder_base, experiment_name)
