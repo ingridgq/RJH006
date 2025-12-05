@@ -1,0 +1,239 @@
+#Plotting raster and PSTH (for speech and listening)
+
+channel = 44 
+class_num = 2 
+bin_size = 0.075 # 75 ms bins 
+x_lim = [-1.5, 2] 
+
+df_channel = df_clusters_all[df_clusters_all['channel'] == channel] 
+df_class = df_channel[df_channel['class'] == class_num] 
+df_class['spike_time'] = df_class['spike_time'] / 1000  #converting to seconds 
+df_class['spike_time'] = df_class['spike_time'] - start_subj_obj  #aligning to start of subject/object segment 
+
+#print(df_class.head(10)) 
+                      
+
+for name in df_names['english_name'].unique(): 
+    df_name_speech = df_names[(df_names['english_name'] == name) & (df_names['speaker_id'] == 1)] #only subject's 
+    df_name_listening = df_names[(df_names['english_name'] == name) & (df_names['speaker_id'] == 0)] #only non-subject's
+    df_name_speech_subject = df_names[(df_names['english_name'] == name) & (df_names['speaker_id'] == 1) & (df_names['class_word'] == 'subject')] #only subject's 
+    df_name_speech_object = df_names[(df_names['english_name'] == name) & (df_names['speaker_id'] == 1) & (df_names['class_word'] == 'object')] #only object's
+
+    aligned_spikes_all_speech = []  # armazenará todos os spikes alinhados de todos os trials
+    
+    #plt.figure(figsize=(10, 6))
+    fig, ax = plt.subplots(4, 3, figsize=(15, 10))
+    plt.suptitle(f"Channel {channel} - class {class_num} - '{name}'")
+            # (you can add code here to plot listening trials if needed)
+    
+    for trial_idx, (_, row) in enumerate(df_name_speech.iterrows()):
+        start_time = row['start_time']
+        end_time = row['end_time']
+
+        #window (1 second before and after the name)
+        mask = (df_class['spike_time'] >= start_time - 10) & (df_class['spike_time'] <= end_time + 10)
+        spikes_name = df_class.loc[mask, 'spike_time']
+
+        aligned_spikes = spikes_name - start_time  # Align spikes to the start time
+
+        aligned_spikes_all_speech.extend(aligned_spikes)
+
+        ax[0, 0].vlines(aligned_spikes, trial_idx, trial_idx + 1, color='b', linewidth=1)
+
+        #plt.axvspan(0, end_time - start_time, color='red', alpha=0.2)
+
+    start_time_mean = df_name_speech['start_time'].mean()
+    end_time_mean = df_name_speech['end_time'].mean()
+    ax[0, 0].axvspan(0, end_time_mean - start_time_mean, color='red', alpha=0.2)
+        
+    ax[0, 0].axvline(0, color='red', linestyle='--', alpha=0.7, label="Speech onset")  # Mark speech start   
+    ax[0, 0].set_title(f"Raster plot - (aligned to speech start)")
+    #ax[0, 0].set_xlabel("Time (s) relative to speech start")
+    ax[0, 0].set_xlim(x_lim)
+    ax[0, 0].set_ylabel("Trials")
+    ax[0, 0].legend(loc='upper right')
+    #ax[0, 0].set_xticks([])          # remove os ticks
+    ax[0, 0].set_xticklabels([])     # remove os números
+
+    # Plotting PSTH (Peri-Stimulus Time Histogram)
+    #plt.subplot(1, )
+    aligned_spikes_all_speech = np.array(aligned_spikes_all_speech)
+    bins = np.arange(x_lim[0], x_lim[1] + bin_size, bin_size)
+    counts, edges = np.histogram(aligned_spikes_all_speech, bins=bins)
+
+    # Calculate firing rates (spikes per second)
+    rate = counts / (len(df_name_speech) * bin_size)  # Firing rate in Hz 
+
+    ax[1, 0].bar(edges[:-1], rate, width=bin_size, color='gray', edgecolor='black', alpha=0.4)
+    ax[1, 0].axvline(0, color='red', linestyle='--', alpha=0.7, label="Speech onset")  # Mark speech start
+
+    for trial_idx, (_, row) in enumerate(df_name_speech.iterrows()):
+        start_time = row['start_time']
+        end_time = row['end_time']
+        #plt.axvspan(0, end_time - start_time, color='red', alpha=0.2)
+    ax[1, 0].axvspan(0, end_time_mean - start_time_mean, color='red', alpha=0.2)
+    ax[1, 0].set_xlabel("Time (s) relative to speech start")
+    ax[1, 0].set_ylabel("Firing Rate (spikes/s)")
+    #ax[1, 0].set_title(f"PSTH")
+    ax[1, 0].set_xlim(x_lim)
+    ax[1, 0].legend(loc='upper right')
+
+#--------------------- plotting listening trials ---------------------
+    aligned_spikes_all_listening = []  # armazenará todos os spikes alinhados de todos os trials
+    for trial_idx, (_, row) in enumerate(df_name_listening.iterrows()):
+        start_time = row['start_time']
+        end_time = row['end_time']
+
+        #window (1 second before and after the name)
+        mask = (df_class['spike_time'] >= start_time - 10) & (df_class['spike_time'] <= end_time + 10)
+        spikes_name = df_class.loc[mask, 'spike_time']
+
+        aligned_spikes = spikes_name - start_time  # Align spikes to the start time
+
+        aligned_spikes_all_listening.extend(aligned_spikes)
+
+        ax[2, 0].vlines(aligned_spikes, trial_idx, trial_idx + 1, color='b', linewidth=1)
+
+    start_time_mean = df_name_listening['start_time'].mean()
+    end_time_mean = df_name_listening['end_time'].mean()
+    ax[2, 0].axvspan(0, end_time_mean - start_time_mean, color='red', alpha=0.2)
+        
+    ax[2, 0].axvline(0, color='red', linestyle='--', alpha=0.7, label="Listening onset")  # Mark speech start   
+    ax[2, 0].set_title(f"Raster plot (aligned to listening start)")
+    ax[2, 0].set_xlabel("Time (s) relative to listening start")
+    ax[2, 0].set_xlim(x_lim)
+    #ax[2, 0].set_ylabel("Listening Trials")
+    ax[2, 0].legend(loc='upper right')
+
+    # Plotting PSTH (Peri-Stimulus Time Histogram)
+    #plt.subplot(2, 4)
+    aligned_spikes_all_listening = np.array(aligned_spikes_all_listening)
+    bins = np.arange(x_lim[0], x_lim[1] + bin_size, bin_size)
+    counts, edges = np.histogram(aligned_spikes_all_listening, bins=bins)
+
+    # Calculate firing rates (spikes per second)
+    rate = counts / (len(df_name_listening) * bin_size)  # Firing rate in Hz 
+
+    ax[3, 0].bar(edges[:-1], rate, width=bin_size, color='gray', edgecolor='black', alpha=0.4)
+    ax[3, 0].axvline(0, color='red', linestyle='--', alpha=0.7, label="Listening onset")  # Mark speech start
+
+    for trial_idx, (_, row) in enumerate(df_name_listening.iterrows()):
+        start_time = row['start_time']
+        end_time = row['end_time']
+        #plt.axvspan(0, end_time - start_time, color='red', alpha=0.2)
+    ax[3, 0].axvspan(0, end_time_mean - start_time_mean, color='red', alpha=0.2)
+    ax[3, 0].set_xlabel("Time (s) relative to listening start")
+    #ax[1, 1].set_ylabel("Firing Rate (spikes/s)")
+    ax[3, 0].set_title(f"PSTH")
+    ax[3, 0].set_xlim(x_lim)
+    ax[3, 0].legend(loc='upper right')
+
+#--------------- plotting subject and object trials ---------------------
+    aligned_spikes_all_speech_subject = []  # armazenará todos os spikes alinhados de todos os trials
+    for trial_idx, (_, row) in enumerate(df_name_speech_subject.iterrows()):
+        start_time = row['start_time']
+        end_time = row['end_time']
+
+        #window (1 second before and after the name)
+        mask = (df_class['spike_time'] >= start_time - 10) & (df_class['spike_time'] <= end_time + 10)
+        spikes_name = df_class.loc[mask, 'spike_time']
+
+        aligned_spikes = spikes_name - start_time  # Align spikes to the start time
+
+        aligned_spikes_all_speech_subject.extend(aligned_spikes)
+
+        ax[0, 1].vlines(aligned_spikes, trial_idx, trial_idx + 1, color='b', linewidth=1)
+
+        #plt.axvspan(0, end_time - start_time, color='red', alpha=0.2)
+
+    start_time_mean = df_name_speech_subject['start_time'].mean()
+    end_time_mean = df_name_speech_subject['end_time'].mean()
+    ax[0, 1].axvspan(0, end_time_mean - start_time_mean, color='red', alpha=0.2)
+        
+    ax[0, 1].axvline(0, color='red', linestyle='--', alpha=0.7, label="Subject onset")  # Mark speech start   
+    ax[0, 1].set_title(f"Raster plot - subject - (aligned to subject start)")
+    #ax[0, 1].set_xlabel("Time (s) relative to subject start")
+    ax[0, 1].set_xlim(x_lim)
+    #ax[0, 2].set_ylabel("Citation Trials")
+    ax[0, 1].legend(loc='upper right')
+
+    # Plotting PSTH (Peri-Stimulus Time Histogram)
+    #plt.subplot(2, 4)
+    aligned_spikes_all_speech_subject = np.array(aligned_spikes_all_speech_subject)
+    bins = np.arange(x_lim[0], x_lim[1] + bin_size, bin_size)
+    counts, edges = np.histogram(aligned_spikes_all_speech_subject, bins=bins)
+
+    # Calculate firing rates (spikes per second)
+    rate = counts / (len(df_name_speech_subject) * bin_size)  # Firing rate in Hz 
+
+    ax[1, 1].bar(edges[:-1], rate, width=bin_size, color='gray', edgecolor='black', alpha=0.4)
+    ax[1, 1].axvline(0, color='red', linestyle='--', alpha=0.7, label="Subject onset")  # Mark speech start
+
+    for trial_idx, (_, row) in enumerate(df_name_speech_subject.iterrows()):
+        start_time = row['start_time']
+        end_time = row['end_time']
+        #plt.axvspan(0, end_time - start_time, color='red', alpha=0.2)
+    ax[1, 1].axvspan(0, end_time_mean - start_time_mean, color='red', alpha=0.2)
+    #ax[1, 1].set_xlabel("Time (s) relative to subject start")
+    #ax[1, 2].set_ylabel("Firing Rate (spikes/s)")
+    ax[1, 1].set_title(f"PSTH")
+    ax[1, 1].set_xlim(x_lim)
+    ax[1, 1].legend(loc='upper right')
+
+#--------------------- plotting object trials ---------------------
+    aligned_spikes_all_speech_object = []  # armazenará todos os spikes alinhados de todos os trials
+    for trial_idx, (_, row) in enumerate(df_name_speech_object.iterrows()):
+        start_time = row['start_time']
+        end_time = row['end_time']
+
+        #window (1 second before and after the name)
+        mask = (df_class['spike_time'] >= start_time - 10) & (df_class['spike_time'] <= end_time + 10)
+        spikes_name = df_class.loc[mask, 'spike_time']
+
+        aligned_spikes = spikes_name - start_time  # Align spikes to the start time
+
+        aligned_spikes_all_speech_object.extend(aligned_spikes)
+
+        ax[0, 2].vlines(aligned_spikes, trial_idx, trial_idx + 1, color='b', linewidth=1)
+
+    start_time_mean = df_name_speech_object['start_time'].mean()
+    end_time_mean = df_name_speech_object['end_time'].mean()
+    ax[0, 2].axvspan(0, end_time_mean - start_time_mean, color='red', alpha=0.2)
+        
+    ax[0, 2].axvline(0, color='red', linestyle='--', alpha=0.7, label="Object onset")  # Mark speech start   
+    ax[0, 2].set_title(f"Raster plot (aligned to object start)")
+    #ax[0, 2].set_xlabel("Time (s) relative to object start")
+    ax[0, 2].set_xlim(x_lim)
+    #ax[0, 3].set_ylabel("Object Trials")
+    ax[0, 2].legend(loc='upper right')
+
+    # Plotting PSTH (Peri-Stimulus Time Histogram)
+    #plt.subplot(2, 4)
+    aligned_spikes_all_speech_object = np.array(aligned_spikes_all_speech_object)
+    bins = np.arange(x_lim[0], x_lim[1] + bin_size, bin_size)
+    counts, edges = np.histogram(aligned_spikes_all_speech_object, bins=bins)
+
+    # Calculate firing rates (spikes per second)
+    rate = counts / (len(df_name_speech_object) * bin_size)  # Firing rate in Hz 
+
+    ax[1, 2].bar(edges[:-1], rate, width=bin_size, color='gray', edgecolor='black', alpha=0.4)
+    ax[1, 2].axvline(0, color='red', linestyle='--', alpha=0.7, label="Object onset")  # Mark speech start
+
+    for trial_idx, (_, row) in enumerate(df_name_speech_object.iterrows()):
+        start_time = row['start_time']
+        end_time = row['end_time']
+        #plt.axvspan(0, end_time - start_time, color='red', alpha=0.2)
+    ax[1, 2].axvspan(0, end_time_mean - start_time_mean, color='red', alpha=0.2)
+    ax[1, 2].set_xlabel("Time (s) relative to object start")
+    #ax[1, 3].set_ylabel("Firing Rate (spikes/s)")
+    ax[1, 2].set_title(f"PSTH")
+    ax[1, 2].set_xlim(x_lim)
+    ax[1, 2].legend(loc='upper right')
+
+
+
+    
+
+
+    plt.tight_layout()
+    plt.show()
