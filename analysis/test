@@ -237,3 +237,62 @@ for name in df_names['english_name'].unique():
 
     plt.tight_layout()
     plt.show()
+
+
+#--------------------- plotting object trials ---------------------
+    aligned_spikes_all_speech_object = []  # armazenará todos os spikes alinhados de todos os trials
+    for trial_idx, (_, row) in enumerate(df_name_speech_object.iterrows()):
+        start_time = row['start_time']
+        end_time = row['end_time']
+
+        #window (1 second before and after the name)
+        mask = (df_class['spike_time'] >= start_time - 10) & (df_class['spike_time'] <= end_time + 10)
+        spikes_name = df_class.loc[mask, 'spike_time']
+
+        aligned_spikes = spikes_name - start_time  # Align spikes to the start time
+
+        aligned_spikes_all_speech_object.extend(aligned_spikes)
+
+        ax[0, 2].vlines(aligned_spikes, trial_idx, trial_idx + 1, color='b', linewidth=1)
+
+    start_time_mean = df_name_speech_object['start_time'].mean()
+    end_time_mean = df_name_speech_object['end_time'].mean()
+    ax[0, 2].axvspan(0, end_time_mean - start_time_mean, color='red', alpha=0.2)
+        
+    ax[0, 2].axvline(0, color='red', linestyle='--', alpha=0.7, label="Object onset")  # Mark speech start   
+    ax[0, 2].set_title(f"Raster plot (aligned to object start)")
+    #ax[0, 2].set_xlabel("Time (s) relative to object start")
+    ax[0, 2].set_xlim(x_lim)
+    #ax[0, 3].set_ylabel("Object Trials")
+    ax[0, 2].legend(loc='upper right')
+
+    # Plotting PSTH (Peri-Stimulus Time Histogram)
+    #plt.subplot(2, 4)
+    aligned_spikes_all_speech_object = np.array(aligned_spikes_all_speech_object)
+    bins = np.arange(x_lim[0], x_lim[1] + bin_size, bin_size)
+    counts, edges = np.histogram(aligned_spikes_all_speech_object, bins=bins)
+
+    # Calculate firing rates (spikes per second)
+    rate = counts / (len(df_name_speech_object) * bin_size)  # Firing rate in Hz 
+
+    ax[1, 2].bar(edges[:-1], rate, width=bin_size, color='gray', edgecolor='black', alpha=0.4)
+    ax[1, 2].axvline(0, color='red', linestyle='--', alpha=0.7, label="Object onset")  # Mark speech start
+
+    for trial_idx, (_, row) in enumerate(df_name_speech_object.iterrows()):
+        start_time = row['start_time']
+        end_time = row['end_time']
+        #plt.axvspan(0, end_time - start_time, color='red', alpha=0.2)
+    ax[1, 2].axvspan(0, end_time_mean - start_time_mean, color='red', alpha=0.2)
+    ax[1, 2].set_xlabel("Time (s) relative to object start")
+    #ax[1, 3].set_ylabel("Firing Rate (spikes/s)")
+    ax[1, 2].set_title(f"PSTH")
+    ax[1, 2].set_xlim(x_lim)
+    ax[1, 2].legend(loc='upper right')
+
+
+
+    
+
+
+    plt.tight_layout()
+    plt.show()
